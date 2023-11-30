@@ -178,8 +178,8 @@ def update_output(cuenta_1, cuenta_2, cuenta_3, start_date, end_date):
                 )
     return fig_1, fig_2, fig_3
 
-# if __name__ == '__main__':
-#     app.run_server(debug=True)
+if __name__ == '__main__':
+    app.run_server(debug=True)
 
-with open('index.html', 'w') as file:
-    file.write(app.to_html(full_html = False))
+# with open('index.html', 'w') as file:
+#     file.write(app.to_html(full_html = False))
