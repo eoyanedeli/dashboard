@@ -40,9 +40,13 @@ theme = {
 
 ############## extraer datos ################
 
-df = pd.read_excel('https://github.com/eoyanedeli/ANID/raw/master/panel2/descargaTicket.xlsx', sheet_name = 'Hoja 1')
+df = pd.read_excel('https://github.com/eoyanedeli/ANID/raw/master/panel2/descargaTicket.xlsx', sheet_name = 'Hoja 1').loc[lambda x: (x['cuenta_que_recibe'] != 'latindex@anid.cl') & (x['cuenta_que_recibe'] != 'issn@anid.cl')]
 
 cuentas = list(df.groupby('cuenta_que_recibe').size().reset_index(name = 'count')['cuenta_que_recibe'])
+
+opciones = [{'label': f'{cuenta}', 'value': cuenta} for cuenta in cuentas]
+
+# opciones.append({'label': 'General', 'value': 'general'})
 
 app.layout = dbc.Container([
     
@@ -76,8 +80,16 @@ app.layout = dbc.Container([
             dcc.Graph(id = 'graph-1'),
             dcc.Dropdown(
                 id = 'select-1',
-                options = [{'label': f'{cuenta}', 'value': cuenta} for cuenta in cuentas],
-                value = 'scielo@anid.cl'
+                options = opciones,
+                value = None
+            ),
+            dcc.DatePickerRange(
+                minimum_nights=5,
+                clearable=True,
+                with_portal=True,
+                start_date = date(2023, 1, 1),
+                end_date = date(2023, 11, 27),
+                id = 'date-1'
             )],
             width = 6
         )
@@ -90,8 +102,16 @@ app.layout = dbc.Container([
             dcc.Graph(id = 'graph-2'),
             dcc.Dropdown(
                 id = 'select-2',
-                options = [{'label': f'{cuenta}', 'value': cuenta} for cuenta in cuentas],
-                value = 'scielo@anid.cl'
+                options = opciones,
+                value = None
+            ),
+            dcc.DatePickerRange(
+                minimum_nights=5,
+                clearable=True,
+                with_portal=True,
+                start_date = date(2023, 1, 1),
+                end_date = date(2023, 11, 27),
+                id = 'date-2'
             )],
             width = 6
         ),
@@ -102,8 +122,8 @@ app.layout = dbc.Container([
             dcc.Graph(id = 'graph-3'),
             dcc.Dropdown(
                 id = 'select-3',
-                options = [{'label': f'{cuenta}', 'value': cuenta} for cuenta in cuentas],
-                value = 'scielo@anid.cl'
+                options = opciones,
+                value = None
             ), 
             dcc.DatePickerRange(
                 minimum_nights=5,
@@ -111,7 +131,7 @@ app.layout = dbc.Container([
                 with_portal=True,
                 start_date = date(2023, 1, 1),
                 end_date = date(2023, 11, 27),
-                id = 'date'
+                id = 'date-3'
             )],
             width = 6
         )
@@ -125,30 +145,52 @@ app.layout = dbc.Container([
     [Input('select-1', 'value'),
      Input('select-2', 'value'),
      Input('select-3', 'value'),
-     Input('date', 'start_date'),
-     Input('date', 'end_date')]
+     Input('date-1', 'start_date'),
+     Input('date-1', 'end_date'),
+     Input('date-2', 'start_date'),
+     Input('date-2', 'end_date'),
+     Input('date-3', 'start_date'),
+     Input('date-3', 'end_date')]
 )
 
-def update_output(cuenta_1, cuenta_2, cuenta_3, start_date, end_date):
+def update_output(cuenta_1, cuenta_2, cuenta_3, start_date_1, end_date_1, start_date_2, end_date_2, start_date_3, end_date_3):
     
     df_solved = df.loc[lambda x: x['estado'] == 'Cerrado']
     # serie_actualizada = pd.to_datetime(df_solved['fecha_actualizacion'], errors = 'coerce')
     # serie_creada = pd.to_datetime(df_solved['fecha_creacion'], errors = 'coerce')
-    dt = df_solved.loc[lambda x: (start_date < pd.to_datetime(pd.to_datetime(x['fecha_creacion'], errors = 'coerce').dt.strftime('%Y-%m-%d'))) &
-    (pd.to_datetime(pd.to_datetime(x['fecha_creacion'], errors = 'coerce').dt.strftime('%Y-%m-%d')) < end_date)]
+    # dt = df_solved.loc[lambda x: (start_date < pd.to_datetime(pd.to_datetime(x['fecha_creacion'], errors = 'coerce').dt.strftime('%Y-%m-%d'))) &
+    # (pd.to_datetime(pd.to_datetime(x['fecha_creacion'], errors = 'coerce').dt.strftime('%Y-%m-%d')) < end_date)]
+
+    if (start_date_1 != None) and  (end_date_1 != None):
+        df_1 = df_solved.loc[lambda x: (start_date_1 < pd.to_datetime(pd.to_datetime(x['fecha_creacion'], errors = 'coerce').dt.strftime('%Y-%m-%d'))) &
+        (pd.to_datetime(pd.to_datetime(x['fecha_creacion'], errors = 'coerce').dt.strftime('%Y-%m-%d')) < end_date_1)]
+    else:
+        df_1 = df_solved
+
+    if (start_date_2 != None) and  (end_date_2 != None):
+        df_2 = df_solved.loc[lambda x: (start_date_2 < pd.to_datetime(pd.to_datetime(x['fecha_creacion'], errors = 'coerce').dt.strftime('%Y-%m-%d'))) &
+        (pd.to_datetime(pd.to_datetime(x['fecha_creacion'], errors = 'coerce').dt.strftime('%Y-%m-%d')) < end_date_2)]
+    else:
+        df_2 = df_solved
+    
+    if (start_date_3 != None) and  (end_date_3 != None):
+        dt = df_solved.loc[lambda x: (start_date_3 < pd.to_datetime(pd.to_datetime(x['fecha_creacion'], errors = 'coerce').dt.strftime('%Y-%m-%d'))) &
+        (pd.to_datetime(pd.to_datetime(x['fecha_creacion'], errors = 'coerce').dt.strftime('%Y-%m-%d')) < end_date_3)]
+    else:
+        dt = df_solved
     
     # df_solved = df_solved.assign(in_time=(serie_actualizada - serie_creada).dt.days < 5)
     
-    if cuenta_1 == 'general':
-        df_1 = df.groupby('clasificación_pregunta').size().reset_index(name = 'número')
+    if cuenta_1 == None:
+        df_clas = df_1.groupby('clasificación_pregunta').size().reset_index(name = 'número')
     else:
-        df_1 = df.loc[lambda x: x['cuenta_que_recibe'] == cuenta_1].groupby('clasificación_pregunta').size().reset_index(name = 'número')
+        df_clas = df_1.loc[lambda x: x['cuenta_que_recibe'] == cuenta_1].groupby('clasificación_pregunta').size().reset_index(name = 'número')
     
-    if cuenta_2 == 'general':
-        df_quien_contesto = df_solved.groupby('quien_respondio').size().reset_index(name = 'Numero de respuestas')
+    if cuenta_2 == None:
+        df_quien_contesto = df_2.groupby('quien_respondio').size().reset_index(name = 'Numero de respuestas')
     else:
-        df_quien_contesto = df_solved.loc[lambda x: x['cuenta_que_recibe'] == cuenta_2].groupby('quien_respondio').size().reset_index(name = 'Numero de respuestas')
-    if cuenta_3 == 'general':
+        df_quien_contesto = df_2.loc[lambda x: x['cuenta_que_recibe'] == cuenta_2].groupby('quien_respondio').size().reset_index(name = 'Numero de respuestas')
+    if cuenta_3 == None:
         df_a_tiempo = dt.groupby('Cumplimiento SLA').size().reset_index(name = 'Número')
     else:
         df_a_tiempo = dt.loc[lambda x: x['cuenta_que_recibe'] == cuenta_3].groupby('Cumplimiento SLA').size().reset_index(name = 'Número')
@@ -158,7 +200,7 @@ def update_output(cuenta_1, cuenta_2, cuenta_3, start_date, end_date):
     # df_a_tiempo = df_solved.groupby('in_time').size().reset_index(name = 'Número')
     
     fig_1 = px.pie(
-                    df_1,
+                    df_clas,
                     values = 'número',
                     names = 'clasificación_pregunta',
                     title = 'Distribución de preguntas por clasificación'
@@ -180,6 +222,5 @@ def update_output(cuenta_1, cuenta_2, cuenta_3, start_date, end_date):
 
 if __name__ == '__main__':
     app.run_server(debug=True)
-
 # with open('index.html', 'w') as file:
 #     file.write(app.to_html(full_html = False))
